@@ -1,0 +1,60 @@
+# Plaid ETL Schedule Configuration
+# This config file defines scheduled jobs for syncing financial data from Plaid
+#
+# Schedule format: Standard cron expression (minute hour day month weekday)
+# Timeout: Maximum execution time in seconds
+
+jobs:
+  - path: etl/sync_transactions.py
+    type: python
+    name: SyncTransactions
+    description: Sync new and modified transactions from Plaid (incremental)
+    group: PlaidETL
+    schedule: "0 * * * *"          # Every hour
+    timeout: 300                    # 5 minutes
+
+  - path: etl/sync_balances.py
+    type: python
+    name: SyncBalances
+    description: Sync account balances and record balance history
+    group: PlaidETL
+    schedule: "0 6 * * *"          # Daily at 6AM
+    timeout: 300                    # 5 minutes
+
+  - path: etl/sync_accounts.py
+    type: python
+    name: SyncAccounts
+    description: Sync account information from linked institutions
+    group: PlaidETL
+    schedule: "0 6 * * *"          # Daily at 6AM
+    timeout: 300                    # 5 minutes
+
+  - path: etl/fetch_historical.py
+    type: python
+    name: FetchHistorical
+    description: Fetch all historical transactions (up to 5 years back)
+    group: PlaidETL
+    schedule: "0 0 1 * *"          # Monthly on the 1st at midnight
+    timeout: 1800                   # 30 minutes (historical fetch can be slow)
+
+# Environment configuration
+environment:
+  working_directory: /Users/benrishty/Desktop/Github/plaid/quickstart/python
+  python_path: venv/bin/python
+  env_file: .env
+
+# Webhook configuration (for real-time updates)
+webhook:
+  endpoint: /api/webhook
+  events:
+    - TRANSACTIONS.SYNC_UPDATES_AVAILABLE
+    - TRANSACTIONS.DEFAULT_UPDATE
+    - TRANSACTIONS.HISTORICAL_UPDATE
+    - ITEM.ERROR
+    - ITEM.PENDING_EXPIRATION
+    - ITEM.USER_PERMISSION_REVOKED
+
+# Notification settings (optional)
+notifications:
+  on_failure: true
+  on_items_needing_reauth: true
